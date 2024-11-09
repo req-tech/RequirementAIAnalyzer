@@ -31,6 +31,12 @@ function show_instructions() {
 
 function show_settings() {
     toggleElementVisibility('settings_div', 'settings_button', [getLangString('cs003'), getLangString('cs004')]);
+    // if variable userKeysAllowed is set to false, disable the input field with id apiKeyInput
+    if (!userKeysAllowed) {
+        document.getElementById('apiKeyInput').disabled = true;
+        // Set the placeholder of the input field with id apiKeyInput to the message below
+        document.getElementById('apiKeyInput').placeholder = 'User API keys are not allowed.';
+    }
     adjustHeight();
 }
 
@@ -73,30 +79,47 @@ async function getPrompt(cleanText, promptType) {
 }
 
 async function callOpenAIAPI(title, cleanText, promptType) {
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
-    const apiKey = getApiKey();
+    let endpoint = 'https://api.openai.com/v1/chat/completions';
+    let apiKey = getApiKey();
 
     if (!apiKey) return;
 
     const prompt = await getPrompt(cleanText, promptType);
     // console.log(prompt);
 
+    // Determine if the Azure API endpoint is defined and use it if available
+    if (typeof azureApiEndpoint !== 'undefined') {
+        endpoint = azureApiEndpoint;
+        console.log('Using Azure OpenAI.');
+    } else {
+        console.log('Using OpenAI.');
+    }
+
     try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        const bodyContent = {
+            messages: [
+                { role: 'system', content: 'You are an expert in requirement analysis and test generation.' },
+                { role: 'user', content: prompt },
+                { role: 'user', content: "Requirement Title: " + title + " PrimaryText: " + cleanText }
+            ],
+            max_tokens: 1000
+        };
+
+        // Adjust headers and body for Azure API
+        if (endpoint.includes('azure.com')) {
+            headers['api-key'] = apiKey;
+        } else {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            bodyContent.model = 'gpt-4o-mini';
+        }
+
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [
-                    { role: 'system', content: 'You are an expert in requirement analysis and test generation.' },
-                    { role: 'user', content: prompt },
-                    { role: 'user', content: "Requirement Title: "+ title + "PrimaryText: " + cleanText }
-                ],
-                max_tokens: 1000
-            }),
+            headers: headers,
+            body: JSON.stringify(bodyContent),
         });
 
         const data = await response.json();
@@ -104,23 +127,29 @@ async function callOpenAIAPI(title, cleanText, promptType) {
             return data.choices[0].message.content;
         } else {
             console.error('Unexpected API response format:', data);
-            return 'Error analyzing the requirement.';
+            // return 'Error analyzing the requirement.';
         }
     } catch (error) {
+        let errorPrefix = 'Error calling OpenAI API:';
+        // if endpoint contain 'azure.com' then it is Azure OpenAI
+        if ( endpoint.includes('azure.com') ) {
+            errorPrefix = 'Error calling Azure OpenAI API:';
+        }
         console.error('Error calling OpenAI API:', error);
         return 'Error analyzing the requirement.';
+
     }
 }
 
 function getApiKey() {
-    if (typeof env === 'undefined' || typeof env.apiKey === 'undefined') {
+    if (apiKey === 'undefined') {
         env = { apiKey: "" };
     }
 
     let OpenAIapiKey = "";
     // Check if the API key is set in the server environment and the value is not 'unset'
-    if (env.apiKey && env.apiKey !== 'unset') {
-        OpenAIapiKey = env.apiKey;
+    if (apiKey && apiKey !== 'unset') {
+        OpenAIapiKey = apiKey;
         console.log('Using API key from server.');
     } else {
         const apiKeyEntry = document.cookie.split('; ').find(row => row.startsWith('apiKey='));
@@ -128,6 +157,7 @@ function getApiKey() {
             const apiKeyValue = apiKeyEntry.split('=')[1].split('|')[0]; // Extract only the API key part
             OpenAIapiKey = apiKeyValue;
             console.log('Using API key from cookie.');
+            // console.log('API key:', OpenAIapiKey);
         } else {
             console.log('API key not found in cookie.');
         }
@@ -274,8 +304,9 @@ async function readArtefact(promptType) {
         if (match && match[1]) {
             const revisedRequirement = match[1].trim().replace(/<\/?[^>]+(>|$)/g, "");
             document.getElementById('revisedRequirement').value = revisedRequirement;
-        } else {
-            alert('Revised Requirement not found');
+        } 
+        else {
+            console.error('Revised Requirement not found');
         }
 
         adjustHeight();
