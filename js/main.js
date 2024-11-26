@@ -270,8 +270,8 @@ async function updateArtifact() {
 
 // Modify the readArtefact function to set the revised requirement in the hidden input field
 async function readArtefact(promptType) {
-    if (!selArt_ref || selArt_ref.length === 0) {
-        alert('No text artifacts selected.');
+    if (!selArt_ref || selArt_ref.length !== 1) {
+        alert('Select one artifact for analysis.');
         return;
     }
 
@@ -314,8 +314,8 @@ async function readArtefact(promptType) {
 }
 // Undo the update
 async function undoUpdate() {
-    if (!selArt_ref || selArt_ref.length === 0) {
-        alert('No text artifacts selected.');
+    if (!selArt_ref || selArt_ref.length !== 1) {
+        alert('Select one artifact for analysis.');
         return;
     }
 
