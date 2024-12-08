@@ -19,8 +19,33 @@
 				<link href="css/bootstrap.min.css" rel="stylesheet">
 				<script src="js/bootstrap.bundle.min.js"></script>
 
-                <!-- Include the env.js file for OPENAI (or Azure OpanAI) API TOKEN and settings -->
-                <script type="text/javascript" src="envg.js"></script>
+                <!-- Attempt to load envg.js; if it fails, load env.js -->
+                <script type="text/javascript">
+                    function loadScript(url, onSuccess, onError) {
+                        var script = document.createElement("script");
+                        script.type = "text/javascript";
+                        script.src = url;
+                
+                        script.onload = function() {
+                            console.log(url + ' loaded successfully.');
+                            if (onSuccess) onSuccess();
+                        };
+                
+                        script.onerror = function() {
+                            console.warn('Failed to load script: ' + url);
+                            if (onError) onError();
+                        };
+                
+                        document.head.appendChild(script);
+                    }
+                
+                    // Try to load envg.js
+                    loadScript('envg.js', null, function() {
+                        // If envg.js fails to load, try env.js
+                        console.log('Loading env.js as a fallback.');
+                        loadScript('env.js');
+                    });
+                </script>
 
 				<link href="css/carbon-components.min.css" rel="stylesheet">
 				<script src="js/carbon-components.min.js"></script>

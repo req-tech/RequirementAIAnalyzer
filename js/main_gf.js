@@ -33,12 +33,14 @@ function show_instructions() {
 function show_settings() {
     toggleElementVisibility('settings_div', 'settings_button', [getLangString('cs003'), getLangString('cs004')]);
     // if variable userKeysAllowed is set to false, disable the input field with id apiKeyInput
+    // check if the userKeysAllowed is set
+
     if (!userKeysAllowed) {
         document.getElementById('apiKeyInput').disabled = true;
         // Set the placeholder of the input field with id apiKeyInput to the message below
         setElementVisibility('saveCookie', 'none');
         setElementVisibility('removeCookie', 'none');
-        document.getElementById('apiKeyInput').placeholder = 'User API keys are not allowed.';
+        document.getElementById('apiKeyInput').placeholder = 'User API keys are not allowed in this environment.';
     }
     adjustHeight();
 }
@@ -64,7 +66,6 @@ async function onBodyLoad() {
     loadLanguage(); // load the text according to the language file set in main.xml
     adjustHeight();
 }
-
 
 // Function to load JSON file
 async function loadPrompts() {
@@ -363,15 +364,6 @@ Respond only with the JSON object according to the specified structure and no ad
 
     const messages = [systemMessage, userMessage];
 
-    // // Add additional explanation if available
-    // if (inputExplanation && inputExplanation.trim() !== '') {
-    //     const explanationMessage = {
-    //         role: "user",
-    //         content: `Revise according to this: ${inputExplanation}`,
-    //     };
-    //     messages.push(explanationMessage);
-    // }
-
     // Call the API
     const result = await callOpenAIAPI(messages);
     const resultJson = JSON.parse(result);
@@ -474,8 +466,6 @@ function jsonToHtml(jsonString) {
             <p>${instructions}</p>
         </div>
     `;
-    // set explanation to be used for next round of analysis
-    // inputExplanation = explanation;
     return html;
 }
 
