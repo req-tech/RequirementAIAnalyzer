@@ -416,8 +416,8 @@ Respond only with the JSON object according to the specified structure and no ad
     const messages2ndRound = [systemMessage2ndround, userMessage];
 
     const revisedResult = await callOpenAIAPI(messages2ndRound);
-    console.log('Original Result:', result);
-    console.log('Revised Result:', revisedResult);
+    // console.log('Original Result:', result);
+    // console.log('Revised Result:', revisedResult);
 
     // Combine the json results into one json object
     let endResult = '';
@@ -436,7 +436,7 @@ Respond only with the JSON object according to the specified structure and no ad
         ...revisedResultJson
     };
 
-    console.log("End result:", JSON.stringify(combinedResult, null, 2));
+    // console.log("End result:", JSON.stringify(combinedResult, null, 2));
     return  JSON.stringify(combinedResult, null, 2);
 }
 
@@ -458,7 +458,7 @@ function jsonToHtml(jsonString) {
             <strong>Revised Requirement:</strong>
             <p>${revised_requirement}</p>
             <strong>Revised Requirement Score: ${revised_score}</strong>
-            <strong>Top 3 Lacking INCOSE Features:</strong>
+            <strong>Main Lacking INCOSE Features:</strong>
             <ul>
                 ${lacking_features.map(feature => `<li>${feature}</li>`).join('')}
             </ul>
