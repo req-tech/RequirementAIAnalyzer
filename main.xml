@@ -63,58 +63,74 @@
                         content:"";
                         display:inline-block;
                     }
+                      .analysis-result {
+                        font-size: 12px;
+                    }
+                    .analysis-result p {
+                        margin: 0;
+                        font-size: inherit;
+                    }
+                    .analysis-result strong {
+                        display: block;
+                        margin-top: 10px;
+                    }
                 </style>
             </head>
             <body onload='onBodyLoad();'>
-                <div class="d-grid gap-2 mx-2" style='margin-bottom: 3px;'> 
 
-					<table style='margin-top: 5px; border: 0'>
-						<tr>
-							<td style='text-align: center; font-size:12px;'><a onclick='show_instructions();' style='color:#00F; text-decoration: underline;' id='instructions_button'><span id='str001'></span></a></td>
-							<td style='text-align: center; font-size:12px;'><a onclick='show_settings();' style='color:#00F; text-decoration: underline;' id='settings_button'><span id='str002'></span></a></td>
-						</tr>
-					</table>
+                <table style='margin-top: 5px; border: 0'>
+                    <tr>
+                        <td style='text-align: center; font-size:12px;'><a onclick='show_instructions();' style='color:#00F; text-decoration: underline;' id='instructions_button'><span id='str001'></span></a></td>
+                        <td style='text-align: center; font-size:12px;'><a onclick='show_settings();' style='color:#00F; text-decoration: underline;' id='settings_button'><span id='str002'></span></a></td>
+                    </tr>
+                </table>
 
-					<hr style='padding: 0 !important; margin: 0 !important;'/>
+                <hr style='padding: 0 !important; margin: 0 !important;'/>
 
-					<div style="font-size:12px; display: none;" id='instructions_div'>
-						<b><span id='str003'></span> </b> <span id='str004'></span> <br/>
-						<ol>
-							<li> <span id='str005'></span> </li>
-							<li> <span id='str006'></span> </li>
-							<li> <span id='str007'></span></li>
-						</ol>
+                <div style="font-size:12px; display: none;" id='instructions_div'>
+                    <b><span id='str003'></span> </b> <span id='str004'></span> <br/>
+                    <ol>
+                        <li> <span id='str005'></span> </li>
+                        <li> <span id='str006'></span> </li>
+                        <li> <span id='str007'></span></li>
+                    </ol>
 
-						<hr style='padding: 0 !important; margin: 0 !important;'/>
-					</div>
-					
-					<div style="font-size:12px; display: none;" id='settings_div'>
-						<b><span id='str008'>  </span> </b><br/>
-                        <label for="apiKeyInput" style="font-size:12px;">OpenAI API key</label>
-                        <input type="password" id="apiKeyInput" style="width: 100%;" placeholder="API Key"/>
-                        <button type="button" style="font-size:12px;" onclick="saveApiKeyAsCookie();">Save Key on this computer as Cookie</button>
-                        <button type="button" style="font-size:12px;" onclick="removeApiKeyCookie();">Remove Cookie</button>
-						<hr style='padding: 0 !important; margin: 0 !important;'/>
-					</div>
+                    <hr style='padding: 0 !important; margin: 0 !important;'/>
+                </div>
+                
+                <div style="font-size:12px; display: none;" id='settings_div'>
+                    <b><span id='str008'>  </span> </b><br/>
+                    <label for="apiKeyInput" style="font-size:12px;">OpenAI API key</label>
+                    <input type="password" id="apiKeyInput" style="width: 100%;" placeholder="API Key"/>
+                    <button type="button" style="font-size:12px;" onclick="saveApiKeyAsCookie();">Save Key on this computer as Cookie</button>
+                    <button type="button" style="font-size:12px;" onclick="removeApiKeyCookie();">Remove Cookie</button>
+                    <hr style='padding: 0 !important; margin: 0 !important;'/>
+                </div>
 
-					<div style="font-size:12px;">
-						<b><span id='str010' hidden></span></b>
-						<div style="overflow-y: scroll; max-height:80px; background-color:#EEE;" id='container'></div>
-					</div>
+                <div style="font-size:12px;">
+                    <b><span id='str010' hidden></span></b>
+                    <div style="overflow-y: scroll; max-height:80px; background-color:#EEE;" id='container'></div>
+                </div>
 
-				
-                    <div class="bx--col custom-row" style="text-align: left; border:0; padding-top: 0">
-                        <table style='margin-top: 0px; border: 0'>
-						    <tr>
-							    <td style='text-align: left; border:0; ' >
-                                    <button class="bx--btn bx--btn--primary bx--btn--md" type="button" style="font-size:12px;" onclick="readArtefact('incose');">Analyze</button>
-                                </td>
-                                <td style='text-align: left; border:0; ' >
-                                    <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px; display: none" onclick="updateArtifact();" id="updateButton">Update</button>
-                                    <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px; display: none" onclick="undoUpdate();"" id="undoButton">Undo</button>
-                                </td>
-                        </table>
-                    </div>
+            
+                <div class="bx--col custom-row" style="text-align: left; border:0; padding-top: 0">
+                    <table style='margin-top: 0px; border: 0'>
+                        <tr>
+                            <td style='text-align: left; border:0;'>
+                                <button class="bx--btn bx--btn--primary bx--btn--md" type="button" style="font-size:12px;" onclick="readArtefact('incose');">Analyze</button>
+                            </td>
+                            <td style='text-align: left; border:0; display: none' id="updateButton">
+                                <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px;" onclick="updateArtifact();" >Update</button>
+                            </td>
+                            <td style='text-align: left; border:0; display: none' id="undoButton">
+                                <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px;" onclick="undoUpdate();">Undo</button>
+                            </td>
+                    </table>
+                </div>
+
+                <div style="font-size:12px;" id='aiResultText'>
+
+                </div>
 
                 <input type="hidden" id="revisedRequirement" />
                 <input type="hidden" id="originalRequirement" />

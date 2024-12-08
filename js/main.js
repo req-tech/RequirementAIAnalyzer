@@ -41,7 +41,7 @@ function show_settings() {
 }
 
 // Function to show or hide HTML elements
-function toggleElementVisibility(elementId, displayStyle) {
+function setElementVisibility(elementId, displayStyle) {
     const element = document.getElementById(elementId);
     if (element) {
         // console.log(`Toggling visibility of ${element.style.display} to ${displayStyle} for ${elementId}`);
@@ -58,14 +58,14 @@ function setContainerText(containerId, string) {
 
 async function onBodyLoad() {
 
-    const message = document.createElement('h3');
-    document.body.appendChild(message);
+// const message = document.createElement('h3');
+// document.body.appendChild(message);
 
-    const resultText = document.createElement('div');
-    resultText.id = 'aiResultText';
-    resultText.textContent = "This is where the AI results will be displayed.";
-    resultText.style.fontSize = '12px'; // Set the text size to 12px
-    document.body.appendChild(resultText);
+// const resultText = document.createElement('div');
+// resultText.id = 'aiResultText';
+// resultText.textContent = "This is where the AI results will be displayed.";
+// resultText.style.fontSize = '12px'; // Set the text size to 12px
+// document.body.appendChild(resultText);
 
     loadLanguage(); // load the text according to the language file set in main.xml
     adjustHeight();
@@ -212,8 +212,8 @@ async function updateArtifact() {
     } catch (error) {
         console.error('An error occurred while updating the artifact:', error);
     }
-    toggleElementVisibility('updateButton', 'none');
-    toggleElementVisibility('undoButton', 'block');
+    setElementVisibility('updateButton', 'none');
+    setElementVisibility('undoButton', 'block');
     adjustHeight();
 }
 
@@ -254,8 +254,8 @@ async function undoUpdate() {
     } catch (error) {
         console.error('An error occurred while reverting the artifact:', error);
     }
-    toggleElementVisibility('undoButton', 'none');
-    toggleElementVisibility('updateButton', 'block');
+    setElementVisibility('undoButton', 'none');
+    setElementVisibility('updateButton', 'block');
     adjustHeight();
 }
 
@@ -298,7 +298,7 @@ For each characteristic:
 - Suggest actionable improvements for deficiencies.
 
 Thresholds
-High Quality (final score ≥85%): Return the requirement unchanged, making only minor language corrections.
+High Quality (final score ≥85%): Return the revised_requirement empty and state in explanation that 'No changes needed for this requirement.'
 Low Quality (final score <85%): Revise the requirement to improve its quality and provide a detailed explanation of the deficiencies addressed.
 
 Output Template
@@ -398,7 +398,7 @@ function jsonToHtml(jsonString) {
             <ul>
                 ${lacking_features.map(feature => `<li>${feature}</li>`).join('')}
             </ul>
-            <strong>Explanation of Deficiency and Improvement:</strong>
+            <strong >Explanation of Deficiency and Improvement:</strong>
             <p>${explanation}</p>
         </div>
     `;
@@ -417,8 +417,8 @@ async function readArtefact(promptType) {
         let title = res.data[0].values["http://purl.org/dc/terms/title"];
 
         document.getElementById('aiResultText').textContent = "Processing...";
-        toggleElementVisibility('undoButton', 'none');
-        toggleElementVisibility('updateButton', 'none');
+        setElementVisibility('undoButton', 'none');
+        setElementVisibility('updateButton', 'none');
         // Set the original requirement in the hidden input field for Undo
         document.getElementById('originalRequirement').value = primaryText;
 
@@ -441,7 +441,7 @@ async function readArtefact(promptType) {
         } else {
             document.getElementById('aiResultText').textContent = "An error occurred while processing the requirement.";
         }
-        toggleElementVisibility('updateButton', 'block');
+        setElementVisibility('updateButton', 'block');
         adjustHeight();
     });
 }
