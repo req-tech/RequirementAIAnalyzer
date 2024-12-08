@@ -22,10 +22,12 @@
                 <!-- Include the env.js file for OPENAI (or Azure OpanAI) API TOKEN and settings -->
                 <script type="text/javascript" src="env.js"></script>
 
-                <!-- Custom JS-code -->
+				<link href="css/carbon-components.min.css" rel="stylesheet">
+				<script src="js/carbon-components.min.js"></script>
+
+                <!-- Main .js-code -->
 				<script type="text/javascript" src="./js/main.js" charset="utf-8"></script> 
 
-                <!-- Custom CSS -->
                 <style>
                     #container::-webkit-scrollbar {
                         -webkit-appearance: none;
@@ -52,12 +54,20 @@
                         tr:nth-child(even) {
                         background-color: #dddddd;
                     }
+					.custom-row {
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        padding-left: 8px;
+                    }
+                    p:empty::before {
+                        content:"";
+                        display:inline-block;
+                    }
                 </style>
             </head>
             <body onload='onBodyLoad();'>
                 <div class="d-grid gap-2 mx-2" style='margin-bottom: 3px;'> 
 
-				
 					<table style='margin-top: 5px; border: 0'>
 						<tr>
 							<td style='text-align: center; font-size:12px;'><a onclick='show_instructions();' style='color:#00F; text-decoration: underline;' id='instructions_button'><span id='str001'></span></a></td>
@@ -92,14 +102,20 @@
 						<div style="overflow-y: scroll; max-height:80px; background-color:#EEE;" id='container'></div>
 					</div>
 
-                    <!-- Buttons -->
-                    <div>
-                        <button type="button" style="font-size:12px;" onclick="readArtefact('incose');">Analyze Requirement</button>
-                        <button type="button" style="font-size:12px;" onclick="updateArtifact();">Update Primary Text</button>
-                        <button type="button" style="font-size:12px;" onclick="undoUpdate();">Undo</button>
+				
+                    <div class="bx--col custom-row" style="text-align: left; border:0; padding-top: 0">
+                        <table style='margin-top: 0px; border: 0'>
+						    <tr>
+							    <td style='text-align: left; border:0; ' >
+                                    <button class="bx--btn bx--btn--primary bx--btn--md" type="button" style="font-size:12px;" onclick="readArtefact('incose');">Analyze</button>
+                                </td>
+                                <td style='text-align: left; border:0; ' >
+                                    <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px; display: none" onclick="updateArtifact();" id="updateButton">Update</button>
+                                    <button class="bx--btn bx--btn--default bx--btn--md" type="button" style="font-size:12px; display: none" onclick="undoUpdate();"" id="undoButton">Undo</button>
+                                </td>
+                        </table>
                     </div>
-                    
-                </div>
+
                 <input type="hidden" id="revisedRequirement" />
                 <input type="hidden" id="originalRequirement" />
                 

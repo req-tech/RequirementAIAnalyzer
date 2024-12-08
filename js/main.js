@@ -40,6 +40,18 @@ function show_settings() {
     adjustHeight();
 }
 
+// Function to show or hide HTML elements
+function toggleElementVisibility(elementId, displayStyle) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        // console.log(`Toggling visibility of ${element.style.display} to ${displayStyle} for ${elementId}`);
+        element.style.display = displayStyle;
+        adjustHeight();
+    } else {
+        console.error(`${elementId} not found`);
+    }
+}
+
 function setContainerText(containerId, string) {
     document.getElementById(containerId).textContent = string;
 }
@@ -76,69 +88,6 @@ async function getPrompt(cleanText, promptType) {
         return template.replace('${cleanText}', cleanText);
     }
     return '';
-}
-
-async function callOpenAIAPI(title, cleanText, promptType) {
-    let endpoint = 'https://api.openai.com/v1/chat/completions';
-    let apiKey = getApiKey();
-
-    if (!apiKey) return;
-
-    const prompt = await getPrompt(cleanText, promptType);
-    // console.log(prompt);
-
-    // Determine if the Azure API endpoint is defined and use it if available
-    if (typeof azureApiEndpoint !== 'undefined') {
-        endpoint = azureApiEndpoint;
-        console.log('Using Azure OpenAI.');
-    } else {
-        console.log('Using OpenAI.');
-    }
-
-    try {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        const bodyContent = {
-            messages: [
-                { role: 'system', content: 'You are an expert in requirement analysis and test generation.' },
-                { role: 'user', content: prompt },
-                { role: 'user', content: "Requirement Title: " + title + " PrimaryText: " + cleanText }
-            ],
-            max_tokens: 1000
-        };
-
-        // Adjust headers and body for Azure API
-        if (endpoint.includes('azure.com')) {
-            headers['api-key'] = apiKey;
-        } else {
-            headers['Authorization'] = `Bearer ${apiKey}`;
-            bodyContent.model = 'gpt-4o-mini';
-        }
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(bodyContent),
-        });
-
-        const data = await response.json();
-        if (data && data.choices && data.choices.length > 0) {
-            return data.choices[0].message.content;
-        } else {
-            console.error('Unexpected API response format:', data);
-            // return 'Error analyzing the requirement.';
-        }
-    } catch (error) {
-        let errorPrefix = 'Error calling OpenAI API:';
-        // if endpoint contain 'azure.com' then it is Azure OpenAI
-        if ( endpoint.includes('azure.com') ) {
-            errorPrefix = 'Error calling Azure OpenAI API:';
-        }
-        console.error('Error calling OpenAI API:', error);
-        return 'Error analyzing the requirement.';
-
-    }
 }
 
 function getApiKey() {
@@ -226,7 +175,6 @@ function checkCookieExists(cookieName) {
     return false;
 }
 
-// New function to update the artifact
 // Function to update the artifact with the revised requirement
 async function updateArtifact() {
     if (!selArt_ref || selArt_ref.length === 0) {
@@ -264,55 +212,12 @@ async function updateArtifact() {
     } catch (error) {
         console.error('An error occurred while updating the artifact:', error);
     }
+    toggleElementVisibility('updateButton', 'none');
+    toggleElementVisibility('undoButton', 'block');
+    adjustHeight();
 }
 
-
-
-// Modify the readArtefact function to set the revised requirement in the hidden input field
-async function readArtefact(promptType) {
-    if (!selArt_ref || selArt_ref.length !== 1) {
-        alert('Select one artifact for analysis.');
-        return;
-    }
-
-    RM.Data.getAttributes(selArt_ref, [RM.Data.Attributes.PRIMARY_TEXT, RM.Data.Attributes.NAME], async function (res) {
-        let primaryText = res.data[0].values["http://www.ibm.com/xmlns/rdm/types/PrimaryText"];
-        let title = res.data[0].values["http://purl.org/dc/terms/title"];
-
-        document.getElementById('aiResultText').textContent = "Processing...";
-        // Set the original requirement in the hidden input field for Undo
-        document.getElementById('originalRequirement').value = primaryText;
-
-        let result = await callOpenAIAPI(title, primaryText, promptType);
-        let formattedResult = '';
-        let plainResult = '';
-        if (result) {
-            formattedResult = result.replaceAll('¤**', '<br><strong>');
-            plainResult = formattedResult.replaceAll('¤**', '');
-            formattedResult = formattedResult.replaceAll('**', '</strong>');
-            plainResult = plainResult.replaceAll('**', '');
-            formattedResult = formattedResult.replaceAll('¤-', '<br>-');
-            plainResult = plainResult.replaceAll('¤-', '');
-
-            document.getElementById('aiResultText').innerHTML = formattedResult;
-        } else {
-            document.getElementById('aiResultText').textContent = "An error occurred while processing the requirement.";
-        }
-
-        const match = plainResult.match(/Revised Requirement:\s*([\s\S]*?)\s*Revised Requirement Score:/i);
-
-        if (match && match[1]) {
-            const revisedRequirement = match[1].trim().replace(/<\/?[^>]+(>|$)/g, "");
-            document.getElementById('revisedRequirement').value = revisedRequirement;
-        } 
-        else {
-            console.error('Revised Requirement not found');
-        }
-
-        adjustHeight();
-    });
-}
-// Undo the update
+// Reset the revised requirement field to the original requirement
 async function undoUpdate() {
     if (!selArt_ref || selArt_ref.length !== 1) {
         alert('Select one artifact for analysis.');
@@ -349,5 +254,194 @@ async function undoUpdate() {
     } catch (error) {
         console.error('An error occurred while reverting the artifact:', error);
     }
+    toggleElementVisibility('undoButton', 'none');
+    toggleElementVisibility('updateButton', 'block');
+    adjustHeight();
 }
 
+async function callOpenAIAPI(title, cleanText, promptType) {
+    let endpoint = 'https://api.openai.com/v1/chat/completions';
+    let apiKey = getApiKey();
+
+    if (!apiKey) return;
+
+    // Load user prompt if needed (though we might not strictly need the template anymore)
+    const userPrompt = await getPrompt(cleanText, promptType);
+
+    // System message containing the instructions and format requirements
+    const systemMessage = {
+        role: "system",
+        content: `
+Audience
+You are assisting a team of system engineers, requirements analysts, and stakeholders responsible for refining requirements in compliance with INCOSE standards. Your goal is to help them ensure that requirements are actionable, verifiable, and aligned with best practices.
+
+Persona
+Act as an expert requirements analyst with deep knowledge of INCOSE standards and human language semantics. You excel at identifying deficiencies, proposing actionable improvements, and communicating effectively with system engineers and technical stakeholders.
+
+Objective
+Analyze the given requirement for quality, identify deficiencies, and provide improvements while maintaining clarity and precision. If the requirement is high-quality, return it unchanged (with minor corrections for grammar or language if needed). The response should follow a structured, professional format.
+
+Analysis Criteria
+Evaluate the requirement based on these INCOSE characteristics: 
+1. Unambiguous 
+2. Verifiable 
+3. Feasible 
+4. Complete 
+5. Correct 
+6. Consistent 
+7. Modifiable 
+8. Prioritized
+
+For each characteristic:
+- Score it on a scale of 0–100.
+- Identify any deficiencies with concrete examples.
+- Suggest actionable improvements for deficiencies.
+
+Thresholds
+High Quality (final score ≥85%): Return the requirement unchanged, making only minor language corrections.
+Low Quality (final score <85%): Revise the requirement to improve its quality and provide a detailed explanation of the deficiencies addressed.
+
+Output Template
+Follow this strict output format:
+
+{
+  "quality_score": "X%",
+  "revised_requirement": "[revised requirement text or 'No changes required.']",
+  "revised_score": "Y%",
+  "lacking_features": ["Feature1", "Feature2", "Feature3"],
+  "explanation": "..."
+}
+
+Respond only with the JSON object according to the specified structure and no additional text.
+        `
+    };
+
+    // User message with the requirement
+    const userMessage = {
+        role: "user",
+        content: `Input Requirement: '${cleanText}'`
+    };
+
+    const messages = [systemMessage, userMessage];
+
+    // Determine if the Azure API endpoint is defined and use it if available
+    if (typeof azureApiEndpoint !== 'undefined') {
+        endpoint = azureApiEndpoint;
+        console.log('Using Azure OpenAI.');
+    } else {
+        console.log('Using OpenAI.');
+    }
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        const bodyContent = {
+            messages: messages,
+            max_tokens: 2048,
+            temperature: 0.1,
+            // response_format: {
+            //     "type": "json_object"
+            //   },
+        };
+
+        // Adjust headers and body for Azure API
+        if (endpoint.includes('azure.com')) {
+            headers['api-key'] = apiKey;
+        } else {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            // Replace 'gpt-4o-mini' with 'gpt-4' or another model if needed
+            bodyContent.model = 'gpt-4o-mini';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(bodyContent),
+        });
+
+        const data = await response.json();
+        if (data && data.choices && data.choices.length > 0) {
+            return data.choices[0].message.content;
+        } else {
+            console.error('Unexpected API response format:', data);
+        }
+    } catch (error) {
+        let errorPrefix = 'Error calling OpenAI API:';
+        if ( endpoint.includes('azure.com') ) {
+            errorPrefix = 'Error calling Azure OpenAI API:';
+        }
+        console.error(errorPrefix, error);
+        return 'Error analyzing the requirement.';
+    }
+}
+
+// Convert the returned JSON into formatted HTML
+function jsonToHtml(jsonString) {
+    let data;
+    try {
+        data = JSON.parse(jsonString);
+    } catch (e) {
+        console.error('Failed to parse JSON:', e);
+        return '<p>Error parsing the AI response.</p>';
+    }
+
+    const { quality_score, revised_requirement, revised_score, lacking_features, explanation } = data;
+
+    let html = `
+        <div class="analysis-result">
+            <strong>Quality Score (INCOSE Standard): ${quality_score}</strong>
+            <strong>Revised Requirement:</strong>
+            <p>${revised_requirement}</p>
+            <strong>Revised Requirement Score: ${revised_score}</strong>
+            <strong>Top 3 Lacking INCOSE Features:</strong>
+            <ul>
+                ${lacking_features.map(feature => `<li>${feature}</li>`).join('')}
+            </ul>
+            <strong>Explanation of Deficiency and Improvement:</strong>
+            <p>${explanation}</p>
+        </div>
+    `;
+    return html;
+}
+
+// Modify the readArtefact function to parse JSON and display HTML
+async function readArtefact(promptType) {
+    if (!selArt_ref || selArt_ref.length !== 1) {
+        alert('Select one artifact for analysis.');
+        return;
+    }
+
+    RM.Data.getAttributes(selArt_ref, [RM.Data.Attributes.PRIMARY_TEXT, RM.Data.Attributes.NAME], async function (res) {
+        let primaryText = res.data[0].values["http://www.ibm.com/xmlns/rdm/types/PrimaryText"];
+        let title = res.data[0].values["http://purl.org/dc/terms/title"];
+
+        document.getElementById('aiResultText').textContent = "Processing...";
+        toggleElementVisibility('undoButton', 'none');
+        toggleElementVisibility('updateButton', 'none');
+        // Set the original requirement in the hidden input field for Undo
+        document.getElementById('originalRequirement').value = primaryText;
+
+        let result = await callOpenAIAPI(title, primaryText, promptType);
+
+        if (result) {
+            // Convert JSON to HTML
+            const htmlOutput = jsonToHtml(result);
+            document.getElementById('aiResultText').innerHTML = htmlOutput;
+
+            // Extract revised requirement from JSON
+            let data;
+            try {
+                data = JSON.parse(result);
+                const revisedReq = data.revised_requirement ? data.revised_requirement : '';
+                document.getElementById('revisedRequirement').value = revisedReq;
+            } catch (error) {
+                console.error('Failed to parse JSON for revised requirement:', error);
+            }
+        } else {
+            document.getElementById('aiResultText').textContent = "An error occurred while processing the requirement.";
+        }
+        toggleElementVisibility('updateButton', 'block');
+        adjustHeight();
+    });
+}
