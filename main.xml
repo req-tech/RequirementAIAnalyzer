@@ -20,13 +20,13 @@
 				<script src="js/bootstrap.bundle.min.js"></script>
 
                 <!-- Include the env.js file for OPENAI (or Azure OpanAI) API TOKEN and settings -->
-                <script type="text/javascript" src="env.js"></script>
+                <script type="text/javascript" src="envg.js"></script>
 
 				<link href="css/carbon-components.min.css" rel="stylesheet">
 				<script src="js/carbon-components.min.js"></script>
 
                 <!-- Main .js-code -->
-				<script type="text/javascript" src="./js/main.js" charset="utf-8"></script> 
+				<script type="text/javascript" src="./js/main_gf.js" charset="utf-8"></script> 
 
                 <style>
                     #container::-webkit-scrollbar {
@@ -102,8 +102,8 @@
                     <b><span id='str008'>  </span> </b><br/>
                     <label for="apiKeyInput" style="font-size:12px;">OpenAI API key</label>
                     <input type="password" id="apiKeyInput" style="width: 100%;" placeholder="API Key"/>
-                    <button type="button" style="font-size:12px;" onclick="saveApiKeyAsCookie();">Save Key on this computer as Cookie</button>
-                    <button type="button" style="font-size:12px;" onclick="removeApiKeyCookie();">Remove Cookie</button>
+                    <button type="button" id="saveCookie" style="font-size:12px;" onclick="saveApiKeyAsCookie();">Save Key on this computer as Cookie</button>
+                    <button type="button" id="removeCookie" style="font-size:12px;" onclick="removeApiKeyCookie();">Remove Cookie</button>
                     <hr style='padding: 0 !important; margin: 0 !important;'/>
                 </div>
 
