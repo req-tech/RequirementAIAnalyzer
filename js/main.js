@@ -1,4 +1,5 @@
 let selArt_ref = [];
+let inputExplanation = '';
 
 RM.Event.subscribe(RM.Event.ARTIFACT_SELECTED, onSelection); // Use the RM library to deal with DNG
 
@@ -259,7 +260,9 @@ async function undoUpdate() {
     adjustHeight();
 }
 
-async function callOpenAIAPI(title, cleanText, promptType) {
+
+// Function to call the OpenAI API
+async function twostepAnalysis(title, cleanText, promptType) {
     let endpoint = 'https://api.openai.com/v1/chat/completions';
     let apiKey = getApiKey();
 
@@ -272,17 +275,13 @@ async function callOpenAIAPI(title, cleanText, promptType) {
     const systemMessage = {
         role: "system",
         content: `
-Audience
+Audience:
 You are assisting a team of system engineers, requirements analysts, and stakeholders responsible for refining requirements in compliance with INCOSE standards. Your goal is to help them ensure that requirements are actionable, verifiable, and aligned with best practices.
 
-Persona
-Act as an expert requirements analyst with deep knowledge of INCOSE standards and human language semantics. You excel at identifying deficiencies, proposing actionable improvements, and communicating effectively with system engineers and technical stakeholders.
-
-Objective
+Objective:
 Analyze the given requirement for quality, identify deficiencies, and provide improvements while maintaining clarity and precision. If the requirement is high-quality, return it unchanged (with minor corrections for grammar or language if needed). The response should follow a structured, professional format.
 
-Analysis Criteria
-Evaluate the requirement based on these INCOSE characteristics: 
+Analysis Criteria, Evaluate the requirement based on these INCOSE characteristics: 
 1. Unambiguous 
 2. Verifiable 
 3. Feasible 
@@ -290,7 +289,6 @@ Evaluate the requirement based on these INCOSE characteristics:
 5. Correct 
 6. Consistent 
 7. Modifiable 
-8. Prioritized
 
 For each characteristic:
 - Score it on a scale of 0–100.
@@ -324,6 +322,17 @@ Respond only with the JSON object according to the specified structure and no ad
 
     const messages = [systemMessage, userMessage];
 
+    // Check if inputExplanation has a value
+    if (inputExplanation && inputExplanation.trim() !== '') {
+        // Create a new message object
+        const explanationMessage = {
+            role: "user",
+            content: `Revise according to this: ${inputExplanation}`
+        };
+        // Add the new message to the messages array
+        messages.push(explanationMessage);
+    }
+
     // Determine if the Azure API endpoint is defined and use it if available
     if (typeof azureApiEndpoint !== 'undefined') {
         endpoint = azureApiEndpoint;
@@ -339,7 +348,7 @@ Respond only with the JSON object according to the specified structure and no ad
         const bodyContent = {
             messages: messages,
             max_tokens: 2048,
-            temperature: 0.1,
+            temperature: 0,
             // response_format: {
             //     "type": "json_object"
             //   },
@@ -398,10 +407,12 @@ function jsonToHtml(jsonString) {
             <ul>
                 ${lacking_features.map(feature => `<li>${feature}</li>`).join('')}
             </ul>
-            <strong >Explanation of Deficiency and Improvement:</strong>
+            <strong>Explanation of Deficiency and Improvement:</strong>
             <p>${explanation}</p>
         </div>
     `;
+    // set explanation to be used for next round of analysis
+    inputExplanation = explanation;
     return html;
 }
 
