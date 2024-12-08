@@ -262,15 +262,64 @@ async function undoUpdate() {
 
 
 // Function to call the OpenAI API
-async function twostepAnalysis(title, cleanText, promptType) {
+// Function to call the OpenAI API
+async function callOpenAIAPI(messages) {
     let endpoint = 'https://api.openai.com/v1/chat/completions';
     let apiKey = getApiKey();
 
     if (!apiKey) return;
 
-    // Load user prompt if needed (though we might not strictly need the template anymore)
-    const userPrompt = await getPrompt(cleanText, promptType);
+    // Determine if the Azure API endpoint is defined
+    if (typeof azureApiEndpoint !== 'undefined') {
+        endpoint = azureApiEndpoint;
+        console.log('Using Azure OpenAI.');
+    } else {
+        console.log('Using OpenAI.');
+    }
 
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        const bodyContent = {
+            messages: messages,
+            max_tokens: 2048,
+            temperature: 0,
+        };
+
+        // Adjust headers and body for Azure API
+        if (endpoint.includes('azure.com')) {
+            headers['api-key'] = apiKey;
+        } else {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            bodyContent.model = 'gpt-4o-mini'; // Replace with 'gpt-4' if needed
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(bodyContent),
+        });
+
+        const data = await response.json();
+        if (data && data.choices && data.choices.length > 0) {
+            return data.choices[0].message.content;
+        } else {
+            console.error('Unexpected API response format:', data);
+            return 'Error analyzing the requirement.';
+        }
+    } catch (error) {
+        let errorPrefix = 'Error calling OpenAI API:';
+        if (endpoint.includes('azure.com')) {
+            errorPrefix = 'Error calling Azure OpenAI API:';
+        }
+        console.error(errorPrefix, error);
+        return 'Error analyzing the requirement.';
+    }
+}
+
+// Function to analyze the requirement
+async function callOpenAIAPI(title, cleanText, promptType) {
     // System message containing the instructions and format requirements
     const systemMessage = {
         role: "system",
@@ -311,78 +360,29 @@ Follow this strict output format:
 }
 
 Respond only with the JSON object according to the specified structure and no additional text.
-        `
+        `,
     };
 
     // User message with the requirement
     const userMessage = {
         role: "user",
-        content: `Input Requirement: '${cleanText}'`
+        content: `Input Requirement: '${cleanText}'`,
     };
 
     const messages = [systemMessage, userMessage];
 
-    // Check if inputExplanation has a value
+    // Add additional explanation if available
     if (inputExplanation && inputExplanation.trim() !== '') {
-        // Create a new message object
         const explanationMessage = {
             role: "user",
-            content: `Revise according to this: ${inputExplanation}`
+            content: `Revise according to this: ${inputExplanation}`,
         };
-        // Add the new message to the messages array
         messages.push(explanationMessage);
     }
 
-    // Determine if the Azure API endpoint is defined and use it if available
-    if (typeof azureApiEndpoint !== 'undefined') {
-        endpoint = azureApiEndpoint;
-        console.log('Using Azure OpenAI.');
-    } else {
-        console.log('Using OpenAI.');
-    }
-
-    try {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        const bodyContent = {
-            messages: messages,
-            max_tokens: 2048,
-            temperature: 0,
-            // response_format: {
-            //     "type": "json_object"
-            //   },
-        };
-
-        // Adjust headers and body for Azure API
-        if (endpoint.includes('azure.com')) {
-            headers['api-key'] = apiKey;
-        } else {
-            headers['Authorization'] = `Bearer ${apiKey}`;
-            // Replace 'gpt-4o-mini' with 'gpt-4' or another model if needed
-            bodyContent.model = 'gpt-4o-mini';
-        }
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(bodyContent),
-        });
-
-        const data = await response.json();
-        if (data && data.choices && data.choices.length > 0) {
-            return data.choices[0].message.content;
-        } else {
-            console.error('Unexpected API response format:', data);
-        }
-    } catch (error) {
-        let errorPrefix = 'Error calling OpenAI API:';
-        if ( endpoint.includes('azure.com') ) {
-            errorPrefix = 'Error calling Azure OpenAI API:';
-        }
-        console.error(errorPrefix, error);
-        return 'Error analyzing the requirement.';
-    }
+    // Call the API
+    const result = await callOpenAIAPI(messages);
+    return result;
 }
 
 // Convert the returned JSON into formatted HTML
@@ -433,7 +433,7 @@ async function readArtefact(promptType) {
         // Set the original requirement in the hidden input field for Undo
         document.getElementById('originalRequirement').value = primaryText;
 
-        let result = await callOpenAIAPI(title, primaryText, promptType);
+        let result = await analyzeRequirement(title, primaryText, promptType);
 
         if (result) {
             // Convert JSON to HTML
