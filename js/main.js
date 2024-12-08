@@ -433,7 +433,7 @@ async function readArtefact(promptType) {
         // Set the original requirement in the hidden input field for Undo
         document.getElementById('originalRequirement').value = primaryText;
 
-        let result = await analyzeRequirement(title, primaryText, promptType);
+        let result = await callOpenAIAPI(title, primaryText, promptType);
 
         if (result) {
             // Convert JSON to HTML
